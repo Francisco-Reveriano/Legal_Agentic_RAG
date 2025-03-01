@@ -99,6 +99,37 @@ def load_files(folder_path: str) -> List[Dict[str, Any]]:
 
     return metadata
 
+def clean_dataframe(df, column):
+    """
+    Cleans the DataFrame by:
+      - Dropping rows in which the specified column does not contain any alphabetical characters (A-Z, a-z).
+      - Removing the substring "| " from the specified column.
+
+    Parameters:
+      df (pd.DataFrame): The input DataFrame.
+      column (str): The name of the column to clean.
+
+    Returns:
+      pd.DataFrame: The cleaned DataFrame.
+    """
+    # Ensure the column values are treated as strings.
+    df[column] = df[column].astype(str)
+
+    # Keep only rows where the column contains at least one alphabetical character.
+    df = df[df[column].str.contains(r'[A-Za-z]', na=False)]
+
+    # Remove the exact substring "| " from the column.
+    df[column] = df[column].str.replace("| ", "", regex=False)
+
+    # Remove the exact substring "|" from the column.
+    df[column] = df[column].str.replace("|", "", regex=False)
+
+    # Remove the exact substring "^^" from the column.
+    df[column] = df[column].str.replace("^^", "", regex=False)
+
+    # Remove the exact substring "" " from the column.
+    df[column] = df[column].str.replace('''"''', "", regex=False)
+    return df
 
 if __name__ == "__main__":
     data = load_files("../Data/Raw")
