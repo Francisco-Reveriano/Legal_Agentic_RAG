@@ -114,6 +114,7 @@ async def detailed_buss_req(original_question: str, business_requirement: str) -
     
     ### 4. **Output Formatting**
     - Ensure that output is a bullet point list
+    - Ensure that output is formatted in Markdown
     
     ### 5. **Key Characteristics of Requirements as Detailed Steps**
     - Specific – Clearly define what needs to be done.
