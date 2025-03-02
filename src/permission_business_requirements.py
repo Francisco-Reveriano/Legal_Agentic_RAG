@@ -1,97 +1,38 @@
-"""
-Module: detailed_business_requirements.py
-
-Description:
-    This module provides an asynchronous function `permissions_buss_req` that generates a detailed list of
-    business permissions by combining prompt engineering, document retrieval, and language model inference.
-    The function constructs a specialized prompt tailored to extracting permitted actions within a regulatory
-    framework, retrieves context documents related to the input query, and then invokes a language model chain
-    to generate a clear, step-by-step bullet list of permissions based on an original question and a verbatim business requirement.
-
-Dependencies:
-    - asyncio: For asynchronous execution.
-    - warnings: To suppress non-critical warnings.
-    - os: For interacting with environment variables.
-    - dotenv: For loading environment variables from a .env file.
-    - pandas: Imported for potential data manipulation.
-    - io.StringIO: For string-based I/O operations.
-    - tiktoken: For tokenization tasks.
-    - langchain (and submodules): For building prompt templates, handling language model chains, and parsing outputs.
-    - pinecone: For integrating with Pinecone’s vector database.
-    - src.business_requirements.retriever: A module for retrieving relevant documents based on a query.
-    - src.prompts: Additional prompt configurations.
-
-Usage:
-    This module is intended to be used in asynchronous contexts. For example:
-
-        import asyncio
-        result = asyncio.run(permissions_buss_req(
-            "What are the compliance requirements?",
-            "Ensure full regulatory compliance"
-        ))
-        print(result)
-
-Environment Setup:
-    - The OpenAI API key is loaded from an environment variable ('OPENAI_API_KEY').
-    - The Pinecone API key is similarly loaded from 'PINECONE_API_KEY'.
-    - Any warnings are suppressed for cleaner output.
-"""
-
 import asyncio
 import warnings
-import os
-from dotenv import load_dotenv
-import pandas as pd
-from io import StringIO
-import tiktoken
-
-from langchain import hub
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from pinecone.grpc import PineconeGRPC as Pinecone
-from pinecone import ServerlessSpec
-
-from src import detailed_business_requirements
-from src.business_requirements import retriever  # Ensure retriever is imported once
-from src.prompts import *
+from src.business_requirements import retriever
 
 # Suppress any warnings for cleaner output
 warnings.filterwarnings("ignore")
 
-# Load environment variables from the .env file
-load_dotenv()
-
-# Set API keys from environment variables
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-pinecone_api_key = os.getenv("PINECONE_API_KEY")
 
 
-async def permissions_buss_req(original_question: str, business_requirement: str, detailed_business_requirement:str) -> str:
+async def permissions_buss_req(original_question: str, business_requirement: str, detailed_business_requirement:str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, model_name:str="gpt-4o",top_k:int=20) -> str:
     """
-    Asynchronously processes a query related to business permissions using context,
-    business requirements, and detailed descriptions. This function utilizes a
-    language model to generate a detailed list of actions permitted by regulations
-    in a well-structured and detailed format. It ensures legal and contextual clarity
-    in the output while leveraging retrieval and processing techniques.
+    Asynchronously generates a detailed permissions-based response derived from context,
+    business requirements, and a user's original question using an AI model. This function
+    uses a Language Model (LLM) and a retriever to gather and summarize information into
+    a jurisdiction-appropriate list of actionable permissions.
 
-    :param original_question: The initial question asking for clarification or
-        guidance on specific permissions related to business operations.
-    :type original_question: str
-    :param business_requirement: Verbatim input specifying the overarching
-        requirement or directive related to business operations within a regulatory
-        or operational context.
-    :type business_requirement: str
-    :param detailed_business_requirement: A more comprehensive breakdown or
-        specification of the business requirement, providing additional insight
-        or fine-grained details regarding the scope and constraints of the original
-        question.
-    :type detailed_business_requirement: str
+    The function integrates multiple components:
+    1. Constructs a structured prompt for determining permissions.
+    2. Uses a language model to generate a response based on business context.
+    3. Asynchronously fetches relevant documents based on input details using specified APIs.
+    4. Processes and returns the response in Markdown format.
 
-    :return: A structured, detailed, and clear representation of permissions and
-        actions permitted based on provided context, business requirements, and
-        detailed descriptions.
-    :rtype: str
+    :param original_question: A string representing the user's original query or question.
+    :param business_requirement: A string capturing the verbatim business need or regulatory condition.
+    :param detailed_business_requirement: A string elaborating on specific details related to the
+        business requirement for clearer contextual understanding.
+    :param OPENAI_API_KEY: A string containing the API key for accessing the OpenAI API.
+    :param PINECONE_API_KEY: A string containing the API key for interacting with Pinecone services.
+    :param model_name: The name of the language model to be used for the analysis. Defaults to "gpt-4o".
+    :param top_k: An integer that specifies the number of top retrieved documents to consider.
+        Defaults to 20.
+    :return: A string containing the permissions list generated by the model, formatted as valid Markdown.
     """
 
     permission_requirement_detailed_prompt = '''
@@ -125,7 +66,7 @@ async def permissions_buss_req(original_question: str, business_requirement: str
     ])
 
     # Initialize the ChatOpenAI language model with a specific model name and temperature.
-    llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model_name="gpt-4o", temperature=0, api_key=OPENAI_API_KEY)
 
     # Combine the prompt, the language model, and the output parser into a processing chain.
     rag_chain = prompt | llm | StrOutputParser()
@@ -135,7 +76,9 @@ async def permissions_buss_req(original_question: str, business_requirement: str
     docs = await asyncio.to_thread(
         retriever,
         query=" ".join([original_question, business_requirement, detailed_business_requirement]),
-        top_k=20,
+        top_k=top_k,
+        OPENAI_API_KEY=OPENAI_API_KEY,
+        PINECONE_API_KEY=PINECONE_API_KEY,
     )
 
     # Asynchronously invoke the chain with the provided inputs.

@@ -1,47 +1,37 @@
 import asyncio
 import warnings
 import os
-from dotenv import load_dotenv
-import pandas as pd
-from io import StringIO
-import tiktoken
 
-from langchain import hub
-from langchain_core.output_parsers import StrOutputParser
+import pandas as pd
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from pinecone.grpc import PineconeGRPC as Pinecone
-from pinecone import ServerlessSpec
-from src.business_requirements import retriever  # Ensure retriever is imported once
-from src.prompts import *
-
+from langchain_core.output_parsers import StrOutputParser
+from src.business_requirements import retriever
 # Suppress any warnings for cleaner output
 warnings.filterwarnings("ignore")
 
-# Load environment variables from the .env file
-load_dotenv()
-
-# Set API keys from environment variables
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-pinecone_api_key = os.getenv("PINECONE_API_KEY")
-
-
-async def simplified_buss_req(original_question: str, business_requirement: str) -> str:
+async def simplified_buss_req(original_question: str, business_requirement: str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, model_name:str="gpt-4o-mini", top_k:int=25) -> str:
     """
-    Asynchronously synthesizes a simplified business requirement response using a language model chain.
+    Simplifies a business requirement by synthesizing a plain English response that aligns
+    with the provided context, verbatim business requirement, and original question. This
+    function processes inputs through a pre-defined synthesis prompt, retrieves relevant
+    documents, and generates a concise synthesis using a language model.
 
-    This function builds a synthesis prompt that integrates the context (retrieved documents),
-    the verbatim business requirement, and the original question. It then constructs a chain of operations
-    using a prompt template, an asynchronous language model, and an output parser to generate a concise,
-    plain English synthesis adhering to legal and business constraints.
-
-    Parameters:
-        original_question (str): The original query or question to be synthesized.
-        business_requirement (str): The verbatim business requirement to be incorporated.
-
-    Returns:
-        str: A synthesized response addressing the original question while following the provided
-             business requirement.
+    :param original_question: The original query or question that needs to be addressed.
+    :type original_question: str
+    :param business_requirement: A verbatim business requirement to guide the synthesis.
+    :type business_requirement: str
+    :param OPENAI_API_KEY: API key for accessing OpenAI services.
+    :type OPENAI_API_KEY: str
+    :param PINECONE_API_KEY: API key for accessing Pinecone services.
+    :type PINECONE_API_KEY: str
+    :param model_name: Name of the OpenAI model to use (default: "gpt-4o-mini").
+    :type model_name: str
+    :param top_k: The number of top documents to retrieve for context (default: 25).
+    :type top_k: int
+    :return: A synthesized plain English response addressing the original query while
+             adhering to the constraints of the business requirement and context.
+    :rtype: str
     """
     business_requirement_synthesis_prompt = '''
     # **Synthesis Prompt for RAG**
@@ -96,7 +86,7 @@ async def simplified_buss_req(original_question: str, business_requirement: str)
     ])
 
     # Initialize the ChatOpenAI language model with a specific model name and temperature.
-    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
+    llm = ChatOpenAI(model_name=model_name, temperature=0, api_key=OPENAI_API_KEY)
 
     # Combine the prompt, the language model, and the output parser into a processing chain.
     rag_chain = prompt | llm | StrOutputParser()
@@ -106,7 +96,9 @@ async def simplified_buss_req(original_question: str, business_requirement: str)
     docs = await asyncio.to_thread(
         retriever,
         query=" ".join([original_question, business_requirement]),
-        top_k=15
+        PINECONE_API_KEY=PINECONE_API_KEY,
+        OPENAI_API_KEY=OPENAI_API_KEY,
+        top_k=top_k
     )
 
     # Asynchronously invoke the chain with the provided inputs.
