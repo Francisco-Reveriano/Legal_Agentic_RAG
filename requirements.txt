@@ -8,5 +8,11 @@ pinecone==6.0.1
 streamlit==1.42.2
 tiktoken==0.9.0
 tqdm==4.67.1
+pinecone-client==6.0.0
+pinecone-plugin-inference
+pinecone-plugin-interface
 tabulate
 openpyxl
+googleapis-common-protos
+google-api-core
+google-genai
