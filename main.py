@@ -235,7 +235,7 @@ async def create_table(query: str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, out
 
     # Step 4: Save the final DataFrame as an Excel file
     save = False
-    if save == True:
+    if save:
         df.to_excel(output_path, index=False)
 
     # Step 5: Convert the DataFrame into Markdown table format

@@ -28,8 +28,12 @@ async def table_to_markdown(df: pd.DataFrame, OPENAI_API_KEY:str, model_name:str
     table_to_markdown_prompt = '''
     # Instructions
     - Convert the provided DataFrame **Original DataFrame** into a properly formatted Markdown table.
-    - Keep all verbatim language and do not synthesize
+    - "Business Requirements" from the Dataframe into **Business Requirements** table column
+    - "Simplified Business Requirements" from the Dataframe into **Simplified Business Requirements** table column
+    - "Requirements, Permissions, Prohibitions" from the Dataframe into **Requirements, Permissions, Prohibitions** table column
+    - Do not synthesize and keep language verbatim.
     - Ensure output is in markdown format
+    - Ensure that oall instructions we followed.
     
     
     # **Example Table Output Format**
@@ -48,7 +52,7 @@ async def table_to_markdown(df: pd.DataFrame, OPENAI_API_KEY:str, model_name:str
     ])
 
     # Initialize the ChatOpenAI language model with a specific model name and temperature.
-    llm = ChatOpenAI(model_name=model_name, reasoning_effort="low")
+    llm = ChatOpenAI(model_name=model_name, reasoning_effort="low", api_key=OPENAI_API_KEY)
 
     # Combine the prompt, the language model, and the output parser into a processing chain.
     rag_chain = prompt | llm | StrOutputParser()
