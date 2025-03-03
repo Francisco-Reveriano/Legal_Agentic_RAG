@@ -88,8 +88,8 @@ if user_input:
                                                 ))
         full_response += "\n\n"
         full_response += key_term_response
-        #full_response = full_response.replace("```markdown\n", "\n")
-        #full_response = full_response.replace("```", "")
+        full_response = full_response.replace("```markdown\n", "\n")
+        full_response = full_response.replace("```", "")
         placeholder.markdown(f"**Assistant:** {full_response}", unsafe_allow_html=True)
 
         st.dataframe(df[["Business_Requirements", "Simplified_Business_Requirements","Combined_Requirements_Permissions_Prohibitions"]])
