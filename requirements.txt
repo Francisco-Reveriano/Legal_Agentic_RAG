@@ -4,11 +4,11 @@ langchain_core==0.3.40
 langchain_openai==0.3.7
 openai==1.65.2
 pandas==2.2.3
-pinecone==6.0.1
+pinecone
 streamlit==1.42.2
 tiktoken==0.9.0
-tqdm==4.67.1
-pinecone-client==6.0.0
+tqdm
+pinecone-client
 pinecone-plugin-inference
 pinecone-plugin-interface
 tabulate
@@ -16,3 +16,4 @@ openpyxl
 googleapis-common-protos
 google-api-core
 google-genai
+langchain-pinecone
