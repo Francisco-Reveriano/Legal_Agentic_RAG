@@ -31,7 +31,8 @@ async def table_to_markdown(df: pd.DataFrame, OPENAI_API_KEY:str, model_name:str
     - "Business Requirements" from the Dataframe into **Business Requirements** table column
     - "Simplified Business Requirements" from the Dataframe into **Simplified Business Requirements** table column
     - "Requirements, Permissions, Prohibitions" from the Dataframe into **Requirements, Permissions, Prohibitions** table column
-    - Do not synthesize and keep language verbatim.
+    - Keep all language verbatim. 
+    - Structure but not synthesize any of the content.
     - Ensure that **Requirements, Permissions, Prohibitions** has a proper bullet point format and structure. 
     - Ensure Table is in markdown format
     - Ensure that all instructions are followed.

@@ -70,7 +70,7 @@ if user_input:
                                                          OPENAI_API_KEY=st.secrets["OPENAI_API_KEY"],
                                                          PINECONE_API_KEY=st.secrets["PINECONE_API_KEY"]))
         full_response += regulation_summary
-        placeholder.markdown(f"**Assistant:** {full_response}")
+        placeholder.markdown(f"**Assistant:** {full_response}", unsafe_allow_html=True)
         df, table_markdown = asyncio.run(create_table(query=query,
                                                       top_k=25,
                                                       OPENAI_API_KEY=st.secrets["OPENAI_API_KEY"],
@@ -79,7 +79,8 @@ if user_input:
         full_response += table_markdown
         full_response = full_response.replace("```markdown\n", "\n")
         full_response = full_response.replace("```", "")
-        placeholder.markdown(f"**Assistant:** {full_response}")
+        full_response = full_response.replace("<br>", "\n")
+        placeholder.markdown(f"**Assistant:** {full_response}", unsafe_allow_html=True)
         key_term_response, context = asyncio.run(key_terms(original_question=query,
                                                 top_k=15,
                                                response=full_response,
@@ -88,9 +89,9 @@ if user_input:
                                                 ))
         full_response += "\n\n"
         full_response += key_term_response
-        full_response = full_response.replace("```markdown\n", "\n")
-        full_response = full_response.replace("```", "")
-        placeholder.markdown(f"**Assistant:** {full_response}")
+        #full_response = full_response.replace("```markdown\n", "\n")
+        #full_response = full_response.replace("```", "")
+        placeholder.markdown(f"**Assistant:** {full_response}", unsafe_allow_html=True)
 
         st.dataframe(df[["Business_Requirements", "Simplified_Business_Requirements","Combined_Requirements_Permissions_Prohibitions"]])
         # Append the Assistant's reply to the conversation history
