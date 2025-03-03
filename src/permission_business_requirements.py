@@ -66,7 +66,7 @@ async def permissions_buss_req(original_question: str, business_requirement: str
     ])
 
     # Initialize the ChatOpenAI language model with a specific model name and temperature.
-    llm = ChatOpenAI(model_name="gpt-4o", temperature=0, api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model_name=model_name, temperature=0, api_key=OPENAI_API_KEY)
 
     # Combine the prompt, the language model, and the output parser into a processing chain.
     rag_chain = prompt | llm | StrOutputParser()
