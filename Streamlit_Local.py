@@ -3,6 +3,7 @@ import io
 import time
 
 import streamlit as st
+st. set_page_config(layout="wide")
 from dotenv import load_dotenv
 from openai import OpenAI
 from main import *
@@ -60,6 +61,9 @@ if user_input:
 
     # Retrieve and display the legal response.
     with st.chat_message("assistant"):
+        # Create an in-memory binary buffer
+        buffer = io.BytesIO()
+
         placeholder = st.empty()
         full_response = ""
         query = st.session_state['conversation'][-1]["content"]
@@ -80,7 +84,7 @@ if user_input:
         full_response = full_response.replace("```", "")
         placeholder.markdown(f"**Assistant:** {full_response}")
         key_term_response, context = asyncio.run(key_terms(original_question=query,
-                                                top_k=25,
+                                                top_k=15,
                                                response=full_response,
                                                OPENAI_API_KEY=st.secrets["OPENAI_API_KEY"],
                                                PINECONE_API_KEY=st.secrets["PINECONE_API_KEY"]
@@ -91,11 +95,22 @@ if user_input:
         full_response = full_response.replace("```", "")
         placeholder.markdown(f"**Assistant:** {full_response}")
 
+        st.dataframe(df[["Business_Requirements", "Simplified_Business_Requirements","Combined_Requirements_Permissions_Prohibitions"]])
+        # Append the Assistant's reply to the conversation history
+        st.session_state['conversation'].append({"role": "assistant", "content": full_response})
 
-        #df, regulation_summary, table_markdown, key_terms_markdown, full_context, full_markdown_response = asyncio.run(create_table(
-        #                                                                                                    query=st.session_state['conversation'][-1]["content"],
-         #                                                                                                   top_k=25))
-        #st.markdown(f"**Assistant:** {full_markdown_response}", unsafe_allow_html=True)
+        # Save DataFrame to an Excel file in memory
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Sheet1')
+            writer.close()
 
-    # Append the assistant's reply to the conversation history.
-    #st.session_state['conversation'].append({"role": "assistant", "content": full_markdown_response})
+        # Set the buffer position to the beginning
+        buffer.seek(0)
+
+        # Streamlit download button
+        st.download_button(
+            label="Download Table",
+            data=buffer,
+            file_name="Output_Table.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )

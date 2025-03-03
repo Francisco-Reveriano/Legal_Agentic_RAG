@@ -1,23 +1,13 @@
 import os
-from dotenv import load_dotenv
 from openai import OpenAI
 from typing import List
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 
-# Load environment variables from a .env file.
-load_dotenv()
-
-# Retrieve the API key from the environment.
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("OPENAI_API_KEY environment variable is not set.")
-
-# Initialize the OpenAI client with the API key.
-client = OpenAI(api_key=api_key)
 
 
-def get_embedding(text: str, model: str = "text-embedding-3-small") -> List[float]:
+
+def get_embedding(text: str, OPENAI_API_KEY:str, model: str = "text-embedding-3-small") -> List[float]:
     """
     Generate an embedding for the given text using the specified OpenAI model.
 
@@ -37,6 +27,10 @@ def get_embedding(text: str, model: str = "text-embedding-3-small") -> List[floa
     # Clean the input text by replacing newline characters with spaces.
     cleaned_text = text.replace("\n", " ")
 
+    # Create Client
+    # Initialize the OpenAI client with the API key.
+    client = OpenAI(api_key=OPENAI_API_KEY)
+
     try:
         # Request the embedding from the OpenAI API.
         response = client.embeddings.create(input=[cleaned_text], model=model)
@@ -53,24 +47,36 @@ from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
 
-def compute_embedding(item):
+def compute_embedding(item, OPENAI_API_KEY:str, model: str = "text-embedding-3-large"):
     """
-    Compute the embedding for a single data item.
+    Compute the embedding of a given content using the specified OpenAI model.
 
-    Args:
-        item (dict): A dictionary containing at least 'id' and 'content'.
+    This function retrieves the embedding vector for textual content provided in the input
+    dictionary, generates the corresponding values, and returns a structured result that
+    includes the embedding values, the provided metadata, and the unique identifier.
 
-    Returns:
-        dict: A dictionary containing the id, computed embedding, and the original metadata.
+    :param item: Input dictionary expected to include 'id' (unique identifier) and 'content'
+        (the textual content to embed).
+    :type item: dict
+    :param OPENAI_API_KEY: The API key required for authenticating with the OpenAI service.
+    :type OPENAI_API_KEY: str
+    :param model: The identifier of the OpenAI embedding model to use for computing the embedding.
+        Defaults to "text-embedding-3-large".
+    :type model: str, optional
+    :return: A dictionary containing the embedding results, including:
+        - 'id': The unique identifier from the input.
+        - 'values': The computed embedding vector.
+        - 'metadata': A copy of the input data.
+    :rtype: dict
     """
     return {
         "id": str(item["id"]),
-        "values": get_embedding(item["content"], model="text-embedding-3-large"),
+        "values": get_embedding(item["content"], model=model, OPENAI_API_KEY=OPENAI_API_KEY),
         "metadata": item
     }
 
 
-def get_dataset_embeddings_parallel(data):
+def get_dataset_embeddings_parallel(data, OPENAI_API_KEY:str, model: str = "text-embedding-3-large"):
     """
     Compute embeddings for all data items in parallel using threads.
 
@@ -82,5 +88,5 @@ def get_dataset_embeddings_parallel(data):
     """
     with ThreadPoolExecutor() as executor:
         # Use executor.map to apply compute_embedding to each item in data.
-        results = list(tqdm(executor.map(compute_embedding, data), total=len(data)))
+        results = list(tqdm(executor.map(compute_embedding, data, OPENAI_API_KEY=OPENAI_API_KEY), total=len(data)))
     return results

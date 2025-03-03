@@ -1,18 +1,13 @@
 import time
+import asyncio
+from io import StringIO
 
-from IPython.display import Markdown, display  # Import
-from openai import OpenAI
-import warnings
-import tiktoken
 from pinecone.grpc import PineconeGRPC as Pinecone
-from pinecone import ServerlessSpec
-import os
-from src.embeddings import *
+from IPython.display import Markdown, display
+from openai import OpenAI
 from src.data_processing import *
 import pandas as pd
-from io import StringIO
-from src.prompts import *
-import asyncio
+import warnings
 warnings.filterwarnings("ignore")
 
 async def retriever(query: str, PINECONE_API_KEY: str, OPENAI_API_KEY:str, top_k: int = 20):

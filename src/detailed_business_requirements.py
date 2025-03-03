@@ -15,6 +15,7 @@ BUSINESS_REQUIREMENT_DETAILED_PROMPT = '''
     ## **Your Task**
         - Provide list of detailed requirements and actions necessary to meet the **Verbatim Business Requirements*** based on the provided **Context** and **Verbatim Business Requirement**
         - Provide a detailed description of each requirement and action in bullet points
+        - Keep language clear and concise
     
     ## **Instructions & Key Characteristics**
         1. Specific – Clearly define what needs to be done.

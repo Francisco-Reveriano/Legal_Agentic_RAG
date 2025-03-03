@@ -15,6 +15,7 @@ from src.prohibitions_business_requirements import *
 from src.concise_summary import *
 from src.table_format import *
 from src.key_terms import *
+from src.combine_requirements_permissions_prohibitions import *
 
 # Ignore warnings to keep the output clean
 warnings.filterwarnings("ignore")
@@ -185,10 +186,32 @@ async def prohibitions_business_requirement(query: str, df: pd.DataFrame, OPENAI
     return df
 
 
+# Asynchronous function to generate permissions for each business requirement in the DataFrame
+async def requirement_permission_prohibition_markdown(df: pd.DataFrame, OPENAI_API_KEY: str, model_name: str = "gpt-4o-mini"):
+    # Create asynchronous tasks for each row's business requirement
+    tasks = [
+        combined_req_perm_prohibition_markdown(
+            detailed_business_requirements=row["Detailed_Business_Requirements"],
+            permission_business_requirements=row["Permission_Business_Requirements"],
+            prohibitions_business_requirements=row["Prohibitions_Business_Requirements"],
+            OPENAI_API_KEY=OPENAI_API_KEY,
+            model_name=model_name,
+        )
+        for _, row in df.iterrows()
+    ]
+
+    # Execute all tasks concurrently and collect results
+    results = await asyncio.gather(*tasks)
+
+    # Store the generated permissions back into the DataFrame
+    df["Combined_Requirements_Permissions_Prohibitions"] = results
+    return df
+
 # Function to generate a full table of requirements, including simplified, detailed, permissions, and prohibitions
 async def create_table(query: str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, output_path:str="Data/Results/Query_Results.xlsx", top_k: int = 25):
     # Step 1: Identify business requirements using the provided query
     response = verbatim_business_requirements(query, top_k=top_k, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY)
+    print("First Response Created")
 
     # Step 2: Convert the response into a DataFrame
     df = convert_str_to_df(data_str=response, OPENAI_API_KEY=OPENAI_API_KEY)
@@ -196,28 +219,26 @@ async def create_table(query: str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, out
     df = clean_dataframe(df, df.columns[0])  # Clean the DataFrame
     df["Business_Requirements"] = df[df.columns[0]]  # Add business requirements to the DataFrame
     df = df.drop(df.columns[0], axis=1)  # Remove the original column after assigning
-    print(df)
+    print("First DataFrame Cleaned")
 
     # Step 3: Process the business requirements asynchronously
-    df = await simplified_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY)
-    df = await detailed_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY)
-    df = await permissions_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY)
-    df = await prohibitions_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY)
+    df = await simplified_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY, top_k=top_k)
+    print("Simplified Requirements Created")
+    df = await detailed_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY, top_k=top_k)
+    print("Detailed Requirements Created")
+    df = await permissions_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY, top_k=top_k)
+    print("Permissions Requirements Created")
+    df = await prohibitions_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY, top_k=top_k)
+    print("Prohibitions Requirements Created")
+    df = await requirement_permission_prohibition_markdown(df=df, OPENAI_API_KEY=OPENAI_API_KEY, model_name="gpt-4o-mini")
+    print("Requirements and Permissions Created")
 
     # Step 4: Save the final DataFrame as an Excel file
     df.to_excel(output_path, index=False)
 
     # Step 5: Convert the DataFrame into Markdown table format
-    table_markdown = await table_to_markdown(df=df.to_json(), OPENAI_API_KEY=OPENAI_API_KEY)
-
-    # Step 7: Identify key terms and return additional context
-    #response = " ".join([regulation_summary, table_markdown])
-    #key_term_markdown, full_context = await key_terms(original_question=query, response=response, top_k=top_k)
-
-    # Step 8: Create Markdown Response
-    #full_markdown = " ".join([regulation_summary, table_markdown, key_term_markdown])
-    #full_markdown = full_markdown.replace("```markdown\n", "\n")
-    #full_markdown = full_markdown.replace("```", "")
+    table_markdown = await table_to_markdown(df=df, OPENAI_API_KEY=OPENAI_API_KEY)
+    print("Final Markdown Table Created")
 
     # Return the results
     return df, table_markdown
