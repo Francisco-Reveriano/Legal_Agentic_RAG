@@ -234,7 +234,9 @@ async def create_table(query: str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, out
     print("Requirements and Permissions Created")
 
     # Step 4: Save the final DataFrame as an Excel file
-    df.to_excel(output_path, index=False)
+    save = False
+    if save == True:
+        df.to_excel(output_path, index=False)
 
     # Step 5: Convert the DataFrame into Markdown table format
     table_markdown = await table_to_markdown(df=df, OPENAI_API_KEY=OPENAI_API_KEY)

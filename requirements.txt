@@ -17,3 +17,4 @@ googleapis-common-protos
 google-api-core
 google-genai
 langchain-pinecone
+XlsxWriter
