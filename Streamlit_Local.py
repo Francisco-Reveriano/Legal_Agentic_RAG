@@ -4,14 +4,11 @@ import time
 
 import streamlit as st
 st. set_page_config(layout="wide")
-from dotenv import load_dotenv
 from openai import OpenAI
 from main import *
 import asyncio
 import warnings
-
 warnings.filterwarnings("ignore")
-load_dotenv()
 
 # -----------------------------------------------------------------------------
 # INITIAL SETUP: Initialize the OpenAI client and conversation history in session state
