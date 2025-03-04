@@ -209,17 +209,38 @@ async def requirement_permission_prohibition_markdown(df: pd.DataFrame, OPENAI_A
 
 # Function to generate a full table of requirements, including simplified, detailed, permissions, and prohibitions
 async def create_table(query: str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, output_path:str="Data/Results/Query_Results.xlsx", top_k: int = 25):
+    max_retries = 3
+
     # Step 1: Identify business requirements using the provided query
-    response = verbatim_business_requirements(query, top_k=top_k, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY)
-    print("First Response Created")
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = verbatim_business_requirements(query, top_k=top_k, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY)
+            print("First Response Created")
+            break
+        except Exception as error:
+            print(f"Attempt {attempt} failed with error: {error}")
+            if attempt == max_retries:
+                raise ValueError("Function did not succeed after multiple attempts")
 
     # Step 2: Convert the response into a DataFrame
-    df = convert_str_to_df(data_str=response, OPENAI_API_KEY=OPENAI_API_KEY)
-    df = df.dropna(axis=1, how='all')  # Drop empty columns
-    df = clean_dataframe(df, df.columns[0])  # Clean the DataFrame
-    df["Business_Requirements"] = df[df.columns[0]]  # Add business requirements to the DataFrame
-    df = df.drop(df.columns[0], axis=1)  # Remove the original column after assigning
-    print("First DataFrame Cleaned")
+    for attempt in range(1, max_retries + 1):
+        try:
+            df = convert_str_to_df(data_str=response, OPENAI_API_KEY=OPENAI_API_KEY)
+            df = df.dropna(axis=1, how='all')  # Drop empty columns
+            df = clean_dataframe(df, df.columns[0])  # Clean the DataFrame
+
+            # Check if the DataFrame has zero rows and force a retry if so
+            if df.shape[0] == 0:
+                raise ValueError("DataFrame is empty after cleaning (0 rows).")
+
+            df["Business_Requirements"] = df[df.columns[0]]  # Add business requirements to the DataFrame
+            df = df.drop(df.columns[0], axis=1)  # Remove the original column after assigning
+            print("First DataFrame Cleaned")
+            break
+        except Exception as error:
+            print(f"Attempt {attempt} failed with error: {error}")
+            if attempt == max_retries:
+                raise ValueError("DataFrame cleaning function did not succeed after multiple attempts")
 
     # Step 3: Process the business requirements asynchronously
     df = await simplified_business_requirement(query=query, df=df, OPENAI_API_KEY=OPENAI_API_KEY, PINECONE_API_KEY=PINECONE_API_KEY, top_k=top_k)

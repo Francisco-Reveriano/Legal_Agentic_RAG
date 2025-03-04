@@ -61,7 +61,7 @@ async def retriever(query: str, PINECONE_API_KEY: str, OPENAI_API_KEY:str, top_k
     return question_context
 
 
-def verbatim_business_requirements(query:str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, top_k:int=40):
+def verbatim_business_requirements(query:str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, top_k:int=40, model_name:str="o3-mini"):
     """
     Extract and format regulatory requirements as structured business rules in a CSV-compatible
     format. The function utilizes Pinecone for indexing and querying context data and OpenAI
@@ -102,7 +102,7 @@ def verbatim_business_requirements(query:str, OPENAI_API_KEY:str, PINECONE_API_K
     chunk_token_count = count_tokens_gpt4(question_context)
 
     # Error handling: raise an error if the token count exceeds 100k tokens
-    if chunk_token_count > 100000:
+    if chunk_token_count > 150000:
         raise ValueError(
             f"Combined context token count ({chunk_token_count}) exceeds the 100k limit. "
             "Please provide a shorter input or adjust the context."
@@ -158,7 +158,7 @@ def verbatim_business_requirements(query:str, OPENAI_API_KEY:str, PINECONE_API_K
     '''.format(question_context)
 
     completion = client.chat.completions.create(
-        model="o3-mini",
+        model=model_name,
         reasoning_effort="medium",
         messages=[
             {"role": "developer", "content": developer_prompt},
