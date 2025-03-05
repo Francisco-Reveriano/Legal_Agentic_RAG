@@ -89,7 +89,7 @@ if user_input:
         full_response = full_response.replace("```", "")
         placeholder.markdown(f"**Assistant:** {full_response}", unsafe_allow_html=True)
         key_term_response, context = asyncio.run(key_terms(original_question=query,
-                                                top_k=20,
+                                                top_k=15,
                                                response=full_response,
                                                OPENAI_API_KEY=st.secrets["OPENAI_API_KEY"],
                                                PINECONE_API_KEY=st.secrets["PINECONE_API_KEY"]
