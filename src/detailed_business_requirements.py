@@ -3,7 +3,7 @@ import warnings
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from src.business_requirements import retriever  # Ensure retriever is imported once
+from typing import Any, List, Dict
 
 # Suppress warnings to keep output clean
 warnings.filterwarnings("ignore")
@@ -15,7 +15,8 @@ BUSINESS_REQUIREMENT_DETAILED_PROMPT = '''
     ## **Your Task**
         - Provide list of detailed requirements and actions necessary to meet the **Verbatim Business Requirements*** based on the provided **Context** and **Verbatim Business Requirement**
         - Provide a detailed description of each requirement and action in bullet points
-        - Keep language clear and concise
+        - Ensure that each requirement follows **Instructions & Key Characteristics**
+        - Do not include a summary or synthesis
     
     ## **Instructions & Key Characteristics**
         1. Specific – Clearly define what needs to be done.
@@ -42,49 +43,25 @@ def create_chat_prompt_template() -> ChatPromptTemplate:
     return ChatPromptTemplate([("system", BUSINESS_REQUIREMENT_DETAILED_PROMPT)])
 
 
-async def generate_detailed_requirements(
-        original_question: str,
-        business_requirement: str,
-        OPENAI_API_KEY: str,
-        PINECONE_API_KEY: str,
-        model_name: str = "gpt-4o-mini",
-        top_k: int = 25
-) -> str:
-    """
-    Asynchronously generates a detailed list of business requirements using a prompt,
-    a language model, and context document retrieval from a vector database.
-
-    :param original_question: User's question or query for generating detailed requirements.
-    :param business_requirement: A high-level business need to convert into actionable steps.
-    :param openai_api_key: OpenAI API key for the language model.
-    :param pinecone_api_key: Pinecone API key for document retrieval.
-    :param model_name: OpenAI model name (default: 'gpt-4o-mini').
-    :param top_k: Number of context documents to retrieve (default: 25).
-    :return: A Markdown-formatted detailed list of requirements as a string.
-    """
+async def generate_detailed_requirements(business_requirement: str, state:Dict[str, Any], model_name:str="gpt-4o-mini") -> str:
+    # Inputs
+    updated_question: str = state["updated_question"]
+    filtered_context: str = state["filtered_context"]
 
     # Create a chat prompt template
     prompt = create_chat_prompt_template()
 
     # Initialize the ChatOpenAI instance
-    llm = ChatOpenAI(model_name=model_name, temperature=0.3, api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model=model_name, temperature=0.3, api_key=state["openai_api_key"])
 
     # Combine prompt, language model, and parser into a chain
     rag_chain = prompt | llm | StrOutputParser()
 
-    # Retrieve relevant context documents asynchronously
-    context_docs = await asyncio.to_thread(
-        retriever,
-        query=original_question,
-        top_k=top_k,
-        OPENAI_API_KEY=OPENAI_API_KEY,
-        PINECONE_API_KEY=PINECONE_API_KEY,
-    )
-
     # Invoke the processing chain with required inputs
     output = await rag_chain.ainvoke({
-        "context": context_docs,
+        "context": filtered_context,
         "business_requirement": business_requirement,
-        "original_question": original_question,
+        "original_question": updated_question,
     })
+
     return output

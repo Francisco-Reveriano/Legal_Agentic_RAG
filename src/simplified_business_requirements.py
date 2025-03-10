@@ -6,33 +6,12 @@ import pandas as pd
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from src.business_requirements import retriever
 # Suppress any warnings for cleaner output
 warnings.filterwarnings("ignore")
+from typing import Any, List, Dict
 
-async def simplified_buss_req(original_question: str, business_requirement: str, OPENAI_API_KEY:str, PINECONE_API_KEY:str, model_name:str="gpt-4o-mini", top_k:int=25) -> str:
-    """
-    Simplifies a business requirement by synthesizing a plain English response that aligns
-    with the provided context, verbatim business requirement, and original question. This
-    function processes inputs through a pre-defined synthesis prompt, retrieves relevant
-    documents, and generates a concise synthesis using a language model.
+async def simplified_buss_req(business_requirement: str, state:Dict[str, Any], model_name:str="gpt-4o-mini") -> str:
 
-    :param original_question: The original query or question that needs to be addressed.
-    :type original_question: str
-    :param business_requirement: A verbatim business requirement to guide the synthesis.
-    :type business_requirement: str
-    :param OPENAI_API_KEY: API key for accessing OpenAI services.
-    :type OPENAI_API_KEY: str
-    :param PINECONE_API_KEY: API key for accessing Pinecone services.
-    :type PINECONE_API_KEY: str
-    :param model_name: Name of the OpenAI model to use (default: "gpt-4o-mini").
-    :type model_name: str
-    :param top_k: The number of top documents to retrieve for context (default: 25).
-    :type top_k: int
-    :return: A synthesized plain English response addressing the original query while
-             adhering to the constraints of the business requirement and context.
-    :rtype: str
-    """
     business_requirement_synthesis_prompt = '''
     # **Synthesis Prompt for RAG**
 
@@ -80,31 +59,26 @@ async def simplified_buss_req(original_question: str, business_requirement: str,
     {original_question}
     '''
 
+    # Inputs
+    updated_question:str = state["updated_question"]
+    filtered_context:str = state["filtered_context"]
+
+
     # Create a chat prompt template using the synthesis prompt.
     prompt = ChatPromptTemplate([
         ("system", business_requirement_synthesis_prompt),
     ])
 
     # Initialize the ChatOpenAI language model with a specific model name and temperature.
-    llm = ChatOpenAI(model_name=model_name, temperature=0, api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model=model_name, temperature=0, api_key=state["openai_api_key"])
 
     # Combine the prompt, the language model, and the output parser into a processing chain.
     rag_chain = prompt | llm | StrOutputParser()
 
-    # Retrieve documents relevant to the query.
-    # If `retriever` is a blocking function, we run it in a separate thread.
-    docs = await asyncio.to_thread(
-        retriever,
-        query=" ".join([original_question, business_requirement]),
-        PINECONE_API_KEY=PINECONE_API_KEY,
-        OPENAI_API_KEY=OPENAI_API_KEY,
-        top_k=top_k
-    )
-
     # Asynchronously invoke the chain with the provided inputs.
     generation = await rag_chain.ainvoke({
-        "context": docs,
-        "original_question": original_question,
+        "context": filtered_context,
+        "original_question": updated_question,
         "business_requirement": business_requirement
     })
 

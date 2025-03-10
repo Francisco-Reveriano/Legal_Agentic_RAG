@@ -151,8 +151,5 @@ def clean_dataframe(df, column):
 
     # Remove the exact substring "" " from the column.
     df[column] = df[column].str.replace('''"''', "", regex=False)
-    return df
 
-if __name__ == "__main__":
-    data = load_files("../Data/Raw")
-    print(f"Total chunks processed: {len(data)}")
+    return df
