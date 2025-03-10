@@ -183,7 +183,7 @@ if user_input:
         expander = st.expander("See key terms:")
         expander.write(state["key_terms"])
 
-        save = True
+        save = False
         if save:
             df.to_excel("Data/Results/Results_Dataframe.xlsx", index=False, sheet_name='Sheet1')
 
