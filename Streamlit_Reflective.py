@@ -206,10 +206,10 @@ if user_input:
     # PERSISTING THE DOWNLOAD BUTTON
     # -----------------------------------------------------------------------------
     # If a download file exists, display the download button.
-    if st.session_state.get('download_available', False):
-        st.download_button(
-            label="Download Table",
-            data=st.session_state['download_buffer'],
-            file_name="Output_Table.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+if st.session_state.get('download_available', False):
+    st.download_button(
+        label="Download Table",
+        data=st.session_state['download_buffer'],
+        file_name="Output_Table.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
