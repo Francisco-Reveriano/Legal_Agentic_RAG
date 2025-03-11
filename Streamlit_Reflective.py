@@ -199,9 +199,6 @@ if user_input:
         # Store the buffer in session state so the download remains available.
         st.session_state['download_buffer'] = buffer
         st.session_state['download_available'] = True
-        # Upload to keep response
-        st.session_state['conversation'].append({"role": "assistant", "content": full_response})
-
     # -----------------------------------------------------------------------------
     # PERSISTING THE DOWNLOAD BUTTON
     # -----------------------------------------------------------------------------
