@@ -7,10 +7,28 @@ from pinecone.grpc import PineconeGRPC as Pinecone
 from openai import OpenAI
 import pandas as pd
 import warnings
+import re
 warnings.filterwarnings("ignore")
 
 EMBEDDING_MODEL = "text-embedding-3-large"
 
+def remove_toc_tokens(text: str) -> str:
+    """
+    Removes all occurrences of table-of-contents tokens of the form {#_Toc<number>}
+    from the input text.
+    """
+    # The regex pattern matches an opening curly brace, then "#_Toc",
+    # followed by one or more digits, and a closing curly brace.
+    token_pattern = r'\{?#_(?:Toc|Hlk)\d+\}?'
+    text = re.sub(token_pattern, '', text)
+
+    # Remove width and height attributes (e.g., width="1.8402777777777777in")
+    # This regex matches the attribute name followed by = and a quoted value.
+    dimension_pattern = r'\s*(width|height)\s*=\s*"[^"]+"'
+    text = re.sub(dimension_pattern, '', text)
+    text = text.replace('''{''}.''', "")
+    text = text.replace('{}',"")
+    return text
 
 def retriever(state:Dict[str, Any], original_context:bool=True) -> Dict[str, Any]:
     pinecone_api_key = state["pinecone_api_key"]
@@ -19,7 +37,8 @@ def retriever(state:Dict[str, Any], original_context:bool=True) -> Dict[str, Any
 
     # Load Pinecone Index
     pc = Pinecone(pinecone_api_key)
-    index = pc.Index("legal-hierarchical-rag")
+    #index = pc.Index("australia-broadcasting-services-act")
+    index = pc.Index("japan-foreign-exchange-act")
 
     # Load OpenAI Client
     client = OpenAI(api_key=openai_api_key)
@@ -45,6 +64,7 @@ def retriever(state:Dict[str, Any], original_context:bool=True) -> Dict[str, Any
         chunk_list.append(r["metadata"]["content"])
     unique_chunks = list(set(chunk_list))
     question_context = " ".join(unique_chunks)
+    question_context = remove_toc_tokens(question_context)
 
     # Update Dictionary
     if original_context:

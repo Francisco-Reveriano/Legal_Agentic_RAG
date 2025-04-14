@@ -14,16 +14,12 @@ async def a_query_rewriter(state:Dict[str, Any]) -> Dict[str, Any]:
 
     query_rewriter_prompt = '''
     # **Instructions**
-    - You are a question re-writer that uses additional context to enhance the original question
-    - Use the summary to combine the summary with the original question
-    - Keep the underlying semantic intent and meaning of the original question
+    - You are a question re-writer your job is to rewrite the question in a clear, concise, and accurate manner.
+    - Make sure you keep the underlying semantic intent and meaning of the original question.
     - Ensure that output is no more than 1 sentence. 
 
     # **Input Sections**
-    ### **Context**
-    {concise_summary}
-
-    ### **Original Question**
+    ## **Original Question**
     {original_question}
     
     '''
@@ -39,7 +35,7 @@ async def a_query_rewriter(state:Dict[str, Any]) -> Dict[str, Any]:
     ])
 
     # Initialize the ChatOpenAI language model with a specific model name and temperature.
-    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=1, api_key=openai_api_key)
+    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.1, api_key=openai_api_key)
 
     # Combine the prompt, the language model, and the output parser into a processing chain.
     rag_chain = prompt | llm | StrOutputParser()

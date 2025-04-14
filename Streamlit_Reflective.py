@@ -14,6 +14,7 @@ from src.key_terms import *
 import asyncio
 import warnings
 import pickle
+import json
 warnings.filterwarnings("ignore")
 
 # -----------------------------------------------------------------------------
@@ -78,7 +79,7 @@ if user_input:
         # Create State Dictionary
         state = {"openai_api_key": st.secrets["OPENAI_API_KEY"],
                  "pinecone_api_key": st.secrets["PINECONE_API_KEY"],
-                 "top_k": 40,
+                 "top_k": 20,
         }
 
         placeholder = st.empty()
@@ -86,7 +87,7 @@ if user_input:
         state["original_question"] = user_input # Use the latest query
         # Begin Retrieval Process
         state = retriever(state, original_context=True)
-         # Get Regulation Summary
+        # Get Regulation Summary
         regulation_summary = asyncio.run(a_concise_summary(state))
         ## Update Visualization
         full_response += state["concise_summary"]
@@ -95,7 +96,6 @@ if user_input:
             ### Grade Full Context Documents
             st.write("*Grading retrieved data...*")
             response = grade_full_context(state)
-            print(response)
             if 'yes' in str(response).lower():
                 st.write("*Retrieved relevant documents*")
             else:
@@ -118,7 +118,7 @@ if user_input:
 
             ### Obtain Verbatim Business Requirements
             st.write("*Obtaining verbatim business requirements...*")
-            max_retries = 3
+            max_retries = 5
             for attempt in range(1, max_retries + 1):
                 try:
                     state = verbatim_business_requirements(state)
@@ -134,7 +134,7 @@ if user_input:
                 try:
                     df = asyncio.run(a_convert_str_to_df(state))
                     df = df.dropna(axis=1, how='all')  # Drop empty columns
-                    df = clean_dataframe(df, df.columns[0])
+                    #df = clean_dataframe(df, df.columns[0])
                     # Check if the DataFrame has zero rows and force a retry if so
                     if df.shape[0] == 0:
                         raise ValueError("DataFrame is empty after cleaning (0 rows).")
@@ -183,9 +183,11 @@ if user_input:
         expander = st.expander("See key terms:")
         expander.write(state["key_terms"])
 
-        save = False
+        save = True
         if save:
             df.to_excel("Data/Results/Results_Dataframe.xlsx", index=False, sheet_name='Sheet1')
+            with open('Data/Results/State.json', 'w') as f:
+                json.dump({"filtered_contest": state["filtered_context"]}, f)
 
         # Download button
         ## Create an in-memory binary buffer for Excel File

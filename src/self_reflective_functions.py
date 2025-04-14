@@ -18,6 +18,7 @@ def grade_full_context(state:Dict[str, Any]) -> str:
     original_question = state["original_question"]
     original_context = state["original_context"]
 
+
     # LLM with function call
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=openai_api_key)
     structured_llm_grader = llm.with_structured_output(GradeDocuments)
@@ -37,7 +38,6 @@ def grade_full_context(state:Dict[str, Any]) -> str:
 
     retrieval_grader = grade_prompt | structured_llm_grader
     response = retrieval_grader.invoke({"original_context": original_context, "original_question": original_question})
-    print(response)
     return response
 
 
@@ -50,14 +50,15 @@ def grade_documents(state:Dict[str, Any]) -> Dict[str, Any]:
     query_results = state["query_results"]
 
     # Prepare Chunk Grader
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=openai_api_key)
+    llm = ChatOpenAI(model="gpt-4o" , temperature=0.1, api_key=openai_api_key)
     structured_llm_grader = llm.with_structured_output(GradeDocuments)
 
     # Setup Chunk Checker
     system = """You are a grader assessing relevance of a retrieved document to a user question. \n
         It does not need to be a stringent test. The goal is to filter out erroneous retrievals. \n
-        If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. \n
+        If the document contains keyword(s), semantic meaning, or is related to the user question, grade it as relevant. \n
         Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
+
     grade_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
@@ -82,17 +83,20 @@ def grade_documents(state:Dict[str, Any]) -> Dict[str, Any]:
         results = list(executor.map(process_chunk, doc_chunks))
     ## Filter documents based on the binary score returned
     for doc, binary_score in results:
+        print(binary_score)
         if binary_score == "yes":
             filtered_docs.append(doc)
+    #filtered_docs = doc_chunks
 
     # Make sure we have a dictionary with only available cleaned data
     updated_query_results = query_results
     for match in updated_query_results:
         if match["metadata"]["content"] in filtered_docs:
             del match
-    print("NUmber of Documents before Relevance Check: ", len(doc_chunks))
+
+    print("Number of Documents before Relevance Check: ", len(doc_chunks))
     print("Number of Documents after Relevance Check: ", len(filtered_docs))
-    print("NUmber of Documents deleted: ", len(doc_chunks)-len(filtered_docs))
+    print("Number of Documents deleted: ", len(doc_chunks)-len(filtered_docs))
 
 
     # Update State
