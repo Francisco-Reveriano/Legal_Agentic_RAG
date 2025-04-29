@@ -5,7 +5,6 @@ import time
 import streamlit as st
 st. set_page_config(layout="wide")
 from openai import OpenAI
-from main import *
 from src.retriever import *
 from src.concise_summary import *
 from src.self_reflective_functions import *
@@ -54,6 +53,9 @@ if st.sidebar.button("New Conversation"):
 # PAGE TITLE
 # -----------------------------------------------------------------------------
 st.title("LRR Chatbot")
+st.write(
+    "This is a Generative AI tool to assist in Control Assessment."
+)
 
 # Display all previous conversation messages in order (rendered as Markdown)
 for msg in st.session_state['conversation']:
