@@ -37,8 +37,9 @@ def retriever(state:Dict[str, Any], original_context:bool=True) -> Dict[str, Any
 
     # Load Pinecone Index
     pc = Pinecone(pinecone_api_key)
+    index = pc.Index("legal-assistant-rag")
     #index = pc.Index("australia-broadcasting-services-act")
-    index = pc.Index("japan-foreign-exchange-act")
+    #index = pc.Index("japan-foreign-exchange-act")
 
     # Load OpenAI Client
     client = OpenAI(api_key=openai_api_key)
